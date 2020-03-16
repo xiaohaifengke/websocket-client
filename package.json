@@ -1,0 +1,44 @@
+{
+  "name": "websocket-client",
+  "version": "1.0.0",
+  "description": "A lightweight js lib for WebSocket.",
+  "main": "lib/websocket-client.js",
+  "module": "es/index.js",
+  "author": [
+    {
+      "name": "Jhail",
+      "email": "jiahailiu.xhfk@gmail.com",
+      "url": ""
+    }
+  ],
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.6.2",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "@babel/preset-env": "^7.6.2",
+    "@babel/runtime": "^7.6.2",
+    "babel-eslint": "^10.1.0",
+    "babel-loader": "^8.0.6",
+    "cross-env": "^6.0.3",
+    "eslint": "^6.8.0",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  },
+  "keywords": [
+    "websocket"
+  ],
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaohaifengke/arc"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "dev:window": "cross-env BABEL_ENV=window NODE_ENV=development webpack",
+    "build:window": "cross-env BABEL_ENV=window NODE_ENV=production webpack",
+    "build:es": "rimraf es && cross-env BABEL_ENV=es babel src -d es --source-maps",
+    "build": "yarn dev:window && yarn build:window && yarn build:es"
+  }
+}
