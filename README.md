@@ -39,3 +39,6 @@ const socket = new WebSocketClient('ws://xxx.com/api/ws', {
 })
 ```
 
+## TODO
+1. use typescript
+2. 
