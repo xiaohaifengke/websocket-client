@@ -24,15 +24,16 @@ Browser versions：
 - opera >= 30
 - android >= 4.4
 - ios >= 10
-[^_^]:TODO:
-[^_^]:chrome--16--readyState(not)
-[^_^]:firefox--11--readyState(not)
-[^_^]:safari--7--readyState(not)
-[^_^]:ie--16
-[^_^]:edge--12
-[^_^]:opera--12.1--readyState(not)
-[^_^]:ios--6--readyState(not)
-[^_^]:https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Browser_compatibility
+
+[comment]:(TODO:)
+[comment]:(chrome--16--readyState(not))
+[comment]:(firefox--11--readyState(not))
+[comment]:(safari--7--readyState(not))
+[comment]:(ie--16)
+[comment]:(edge--12)
+[comment]:(opera--12.1--readyState(not))
+[comment]:(ios--6--readyState(not))
+[comment]:(https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Browser_compatibility)
 
 ## Install
 npm
