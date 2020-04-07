@@ -7,12 +7,14 @@
     "cz": "git-cz",
     "cz-tip": "echo \"first, npm install commitizen -g then use git cz\" && exit 1",
     "lint": "eslint src",
-    "lint:fix": "eslint src --cache --fix",
+    "lint:weakfix": "eslint src --cache --fix",
+    "lint:fix": "prettier-eslint --write \"src/**/*.js\"",
     "lint:format": "prettier-eslint 'src/**/*.js' --write",
-    "dev:window": "cross-env BABEL_ENV=window NODE_ENV=development webpack",
-    "build:window": "cross-env BABEL_ENV=window NODE_ENV=production webpack",
+    "dev:lib": "cross-env BABEL_ENV=lib NODE_ENV=development webpack",
+    "build:lib": "cross-env BABEL_ENV=lib NODE_ENV=production webpack",
     "build:es": "rimraf es && cross-env BABEL_ENV=es babel src -d es --source-maps",
-    "build": "yarn dev:window && yarn build:window && yarn build:es"
+    "build": "yarn dev:lib && yarn build:lib && yarn build:es",
+    "prebuild": "yarn lint:fix"
   },
   "lint-staged": {
     "src/**/*.js": [
@@ -51,12 +53,12 @@
     "commitizen": "^4.0.3",
     "cross-env": "^6.0.3",
     "cz-conventional-changelog": "3.1.0",
-    "eslint": "^6.8.0",
+    "eslint": "6.6.0",
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",
     "husky": "^4.2.3",
     "lint-staged": "^10.0.8",
-    "prettier-eslint-cli": "^5.0.0",
+    "prettier-eslint-cli": "4.7.1",
     "prompt-cli": "^0.2.1",
     "standard-version": "^7.1.0",
     "webpack": "^4.41.0",
@@ -68,7 +70,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xiaohaifengke/arc"
+    "url": "https://github.com/xiaohaifengke/websocket-client"
   },
   "config": {
     "commitizen": {
