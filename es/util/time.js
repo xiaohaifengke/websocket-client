@@ -6,7 +6,7 @@ export function getTime() {
   var hour = d.getHours();
   var minute = d.getMinutes();
   var second = d.getSeconds();
-  return year + "-" + f(month) + "-" + f(date) + " " + f(hour) + ":" + f(minute) + ":" + f(second);
+  return "".concat(year, "-").concat(f(month), "-").concat(f(date), " ").concat(f(hour), ":").concat(f(minute), ":").concat(f(second));
 
   function f(num) {
     return num > 9 ? num : '0' + num;
