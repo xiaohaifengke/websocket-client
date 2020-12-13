@@ -178,6 +178,7 @@ export class WebSocketClient {
         // WebSocket is connected and send the message directly.
         if (message === this.$options.heartbeatMessage) {
           console.log(`Heartbeat check at ${getTime()}.`)
+          this.ws.send(JSON.stringify(message))
           break
         }
 
