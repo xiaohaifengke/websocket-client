@@ -17,7 +17,7 @@ export var Heartbeat = /*#__PURE__*/function () {
       period: 50000
     };
     this.ws = ws;
-    this.options = _objectSpread({}, defaultOptions, {}, options);
+    this.options = _objectSpread(_objectSpread({}, defaultOptions), options);
     this.checkIntervalId = null;
   }
 

@@ -37,7 +37,7 @@ export var WebSocketClient = /*#__PURE__*/function () {
     this.url = url;
     this.options = options;
     this.defaultOptions = _objectSpread({}, defaultOptions);
-    this.$options = _objectSpread({}, this.defaultOptions, {}, options);
+    this.$options = _objectSpread(_objectSpread({}, this.defaultOptions), options);
     this.wasClean = null; // Boolean. 是否正常断开。一般异常断开时，该值为false
 
     this.reconnectTimes = 0; // 第n次重连的flag
@@ -211,6 +211,7 @@ export var WebSocketClient = /*#__PURE__*/function () {
             // WebSocket is connected and send the message directly.
             if (message === this.$options.heartbeatMessage) {
               console.log("Heartbeat check at ".concat(getTime(), "."));
+              this.ws.send(JSON.stringify(message));
               break;
             }
 
