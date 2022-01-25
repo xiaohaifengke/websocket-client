@@ -20,6 +20,7 @@ module.exports = {
     // "prettier/prettier": "error",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-var-requires": "off",
     "accessor-pairs": 2,
     "camelcase": [
       0,
