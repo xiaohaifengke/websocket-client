@@ -1,7 +1,12 @@
 import { isPromise } from './index'
+import { CustomEvents, CustomEventsHandler } from '../types'
 
 export class EventHub {
-  on (event, func) {
+  private _events: CustomEvents
+  constructor() {
+    this._events = Object.create(null)
+  }
+  on(event: string, func: CustomEventsHandler) {
     if (!this._events) this._events = Object.create(null)
     if (Array.isArray(event)) {
       for (let i = 0, l = event.length; i < l; i++) {
@@ -13,12 +18,10 @@ export class EventHub {
     return this
   }
 
-  once (event, func) {
-    const $this = this
-
-    function once () {
-      $this.off(event, once)
-      func.apply($this, arguments)
+  once(event: string, func: CustomEventsHandler) {
+    const once = (...args: any[]) => {
+      this.off(event, once)
+      func.apply(this, args)
     }
 
     once.func = func
@@ -26,9 +29,9 @@ export class EventHub {
     return this
   }
 
-  off (event, func) {
+  off(event?: string, func?: CustomEventsHandler) {
     // all
-    if (!arguments.length) {
+    if (!event) {
       this._events = Object.create(null)
       return this
     }
@@ -45,7 +48,7 @@ export class EventHub {
       return this
     }
     if (!func) {
-      this._events[event] = null
+      this._events[event] = []
       return this
     }
     // specific handler
@@ -61,7 +64,7 @@ export class EventHub {
     return this
   }
 
-  trigger (event, ...args) {
+  trigger(event: string, ...args: any[]) {
     let cbs = this._events[event]
     if (cbs) {
       cbs = [...cbs]
@@ -70,7 +73,7 @@ export class EventHub {
         try {
           res = cbs[i].apply(this, args)
           if (res && isPromise(res) && !res._handled) {
-            res.catch(e => console.error(e))
+            res.catch((e: any) => console.error(e))
             res._handled = true
           }
         } catch (e) {

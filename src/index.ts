@@ -1,7 +1,9 @@
 import { Heartbeat } from './heartbeat'
-import { isPromise, getTime, isArrayBufferView, isPlainObject } from './util'
+import { getTime, isArrayBufferView, isPlainObject } from './utils'
+import { WSClientOptions, StatusText, MessageType } from './types'
+import { EventHub } from './utils'
 
-const defaultOptions = {
+const defaultOptions: WSClientOptions = {
   connectImmediately: true,
   enableDefaultEventHandler: true,
   connectLogSilent: false,
@@ -16,15 +18,36 @@ const defaultOptions = {
   heartbeatLogSilent: false
 }
 
-export class WebSocketClient {
-  static STATUS = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']
+export class WebSocketClient extends EventHub {
+  static STATUS = [
+    StatusText.CONNECTING,
+    StatusText.OPEN,
+    StatusText.CLOSING,
+    StatusText.CLOSED
+  ]
 
+  ws: WebSocket | undefined
+  url: string
+  defaultOptions: WSClientOptions
+  options: Partial<WSClientOptions>
+  wasClean: boolean | null
+  reconnectTimes: number
+  heartbeat: Heartbeat
+  readyState: number | undefined
+  onopen: ((...args: any[]) => any) | undefined
+  onmessage: ((...args: any[]) => any) | undefined
+  onclose: ((...args: any[]) => any) | undefined
+  onerror: ((...args: any[]) => any) | undefined
+
+  private $options: WSClientOptions
+  private _messageCache: MessageType[]
   /**
    * WebSocketClient constructor
    * @param { string }  url
    * @param { object | undefined }  options
    */
-  constructor (url, options = {}) {
+  constructor(url: string, options: Partial<WSClientOptions> = {}) {
+    super()
     this.url = url
     this.options = options
     this.defaultOptions = { ...defaultOptions }
@@ -37,13 +60,25 @@ export class WebSocketClient {
       message: this.$options.heartbeatMessage,
       period: this.$options.heartbeatPeriod
     })
+
     this._init()
   }
 
-  createWebSocket () {
+  createWebSocket() {
     if ('WebSocket' in window) {
-      if (this.readyState === undefined || this.readyState === WebSocket.CLOSED) {
+      if (
+        this.readyState === undefined ||
+        this.readyState === WebSocket.CLOSED
+      ) {
         this.ws = new WebSocket(this.url)
+        if (this.$options.onopen) this.onopen = this.$options.onopen
+        if (this.$options.onmessage) this.onmessage = this.$options.onmessage
+        if (this.$options.onclose) this.onclose = this.$options.onclose
+        if (this.$options.onerror) this.onerror = this.$options.onerror
+        this.heartbeat = new Heartbeat(this, {
+          message: this.$options.heartbeatMessage,
+          period: this.$options.heartbeatPeriod
+        })
         if (this.$options.enableDefaultEventHandler) this.initEventsHandler()
       }
     } else {
@@ -51,13 +86,18 @@ export class WebSocketClient {
     }
   }
 
-  reconnectWebSocket (times = 0, interval = this.$options.reconnectTimeInterval) {
+  reconnectWebSocket(
+    times = 0,
+    interval = this.$options.reconnectTimeInterval
+  ) {
     if (times < this.$options.maxReconnectTimes) {
       if (!this.$options.connectLogSilent) {
-        console.log(`Try to reconnect the WebSocket after ${interval / 1000} seconds.`)
+        console.log(
+          `Try to reconnect the WebSocket after ${interval / 1000} seconds.`
+        )
       }
       setTimeout(
-        t => {
+        (t) => {
           if (!this.$options.connectLogSilent) {
             console.log(`${t + 1}th attempt to reconnect to webSocket server.`)
           }
@@ -76,8 +116,8 @@ export class WebSocketClient {
     }
   }
 
-  initEventsHandler () {
-    this.ws.addEventListener('open', () => {
+  initEventsHandler() {
+    this.ws!.addEventListener('open', () => {
       if (!this.$options.eventLogSilent) {
         console.log(`The Websocket has opened at ${getTime()}.`)
       }
@@ -86,20 +126,25 @@ export class WebSocketClient {
       this.heartbeat.recheck()
       this.sendCachedMessage()
     })
-    this.ws.addEventListener('message', event => {
+    this.ws!.addEventListener('message', (event) => {
       this.heartbeat.recheck()
       const data = JSON.parse(event.data)
       if (isPlainObject(data)) {
-        const message = this.$options.message
+        const message = this.$options.message!
         const eventName = data[message]
-        eventName && typeof eventName === 'string' && this.trigger(eventName, data)
+        eventName &&
+          typeof eventName === 'string' &&
+          this.trigger(eventName, data)
       }
     })
-    this.ws.addEventListener('close', event => {
+    this.ws!.addEventListener('close', (event) => {
       this.wasClean = !!event.wasClean
       if (this.wasClean) {
         if (!this.$options.eventLogSilent) {
-          console.log(`The WebSocket connection has been closed normally at ${getTime()}.`, event)
+          console.log(
+            `The WebSocket connection has been closed normally at ${getTime()}.`,
+            event
+          )
         }
       } else {
         if (!this.$options.eventLogSilent) {
@@ -114,7 +159,7 @@ export class WebSocketClient {
       }
       this.heartbeat.stopCheck()
     })
-    this.ws.addEventListener('error', error => {
+    this.ws!.addEventListener('error', (error) => {
       if (!this.$options.eventLogSilent) {
         console.error(
           `The WebSocket connection has been closed due to an error at ${getTime()}.`,
@@ -124,16 +169,16 @@ export class WebSocketClient {
     })
   }
 
-  cacheMessage (message) {
+  cacheMessage(message: MessageType) {
     const index = this._messageCache.indexOf(message)
     if (index === -1) {
       this._messageCache.push(message)
     }
   }
 
-  sendCachedMessage () {
+  sendCachedMessage() {
     if (this._messageCache.length === 0) return
-    const msg = this._messageCache.shift()
+    const msg = this._messageCache.shift()!
     this.send(msg)
     setTimeout(() => {
       this.sendCachedMessage()
@@ -146,29 +191,33 @@ export class WebSocketClient {
    * 3. FIXME: 某些早期浏览器不支持readyState属性，故该方法内的逻辑应该添加相应的判断
    * @param { object } message
    */
-  send (message) {
+  send(message: any) {
     switch (this.readyState) {
       case undefined: {
-
         /**
-         * WebSocket is not instantiated. Store the message to the messageCache
+         * WebSocket is not instantiated. Store the message to the _messageCache
          * and send it after the WebSocket open. Then invoke the createWebSocket method.
          *
          */
-        if (message !== this.$options.heartbeatMessage && this.$options.enableMessageCache) {
+        if (
+          message !== this.$options.heartbeatMessage &&
+          this.$options.enableMessageCache
+        ) {
           this.cacheMessage(message)
         }
         this.createWebSocket()
         break
       }
       case WebSocket.CONNECTING: {
-
         /**
-         * WebSocket is connecting. Store the message to the messageCache
+         * WebSocket is connecting. Store the message to the _messageCache
          * and send it after the WebSocket open.
          *
          */
-        if (message !== this.$options.heartbeatMessage && this.$options.enableMessageCache) {
+        if (
+          message !== this.$options.heartbeatMessage &&
+          this.$options.enableMessageCache
+        ) {
           this.cacheMessage(message)
         }
         break
@@ -178,7 +227,7 @@ export class WebSocketClient {
         // WebSocket is connected and send the message directly.
         if (message === this.$options.heartbeatMessage) {
           console.log(`Heartbeat check at ${getTime()}.`)
-          this.ws.send(JSON.stringify(message))
+          this.ws!.send(JSON.stringify(message))
           break
         }
 
@@ -192,20 +241,22 @@ export class WebSocketClient {
           message instanceof ArrayBuffer ||
           isArrayBufferView(message)
         ) {
-          this.ws.send(message)
+          this.ws!.send(message)
         } else {
-          this.ws.send(JSON.stringify(message))
+          this.ws!.send(JSON.stringify(message))
         }
         break
       }
       default: {
-
         /**
          * TODO: Do not store the message if this.wasClean is true
-         * Store the message to the messageCache
+         * Store the message to the _messageCache
          * and send it after the WebSocket is reconnected.
          */
-        if (message !== this.$options.heartbeatMessage && this.$options.enableMessageCache) {
+        if (
+          message !== this.$options.heartbeatMessage &&
+          this.$options.enableMessageCache
+        ) {
           this.cacheMessage(message)
         }
       }
@@ -218,11 +269,12 @@ export class WebSocketClient {
    * close the connection to determine if any data has yet to be transmitted on the network.
    * If this value isn't 0, there's pending data still, so you may wish to wait before closing the connection.
    */
-  close (...args) {
-    this.ws?.close(...args)
+  close(code?: number, reason?: string): void {
+    this.ws?.close(code, reason)
+    this.heartbeat.stopCheck()
   }
 
-  _init () {
+  private _init() {
     Object.defineProperties(this, {
       readyState: {
         enumerable: true,
@@ -233,7 +285,9 @@ export class WebSocketClient {
       status: {
         enumerable: true,
         get: function () {
-          return this.readyState >= 0 ? this.constructor.STATUS[this.readyState] : 'UNCREATE'
+          return this.readyState >= 0
+            ? this.constructor.STATUS[this.readyState]
+            : 'UNCREATE'
         }
       },
       onopen: {
@@ -242,7 +296,7 @@ export class WebSocketClient {
           return this.ws?.onopen
         },
         set: function (fn) {
-          this.ws && (this.ws.onopen = fn)
+          ;(this.ws && (this.ws.onopen = fn)) || (this.$options.onopen = fn)
         }
       },
       onmessage: {
@@ -251,7 +305,8 @@ export class WebSocketClient {
           return this.ws?.onmessage
         },
         set: function (fn) {
-          this.ws && (this.ws.onmessage = fn)
+          ;(this.ws && (this.ws.onmessage = fn)) ||
+            (this.$options.onmessage = fn)
         }
       },
       onclose: {
@@ -260,7 +315,7 @@ export class WebSocketClient {
           return this.ws?.onclose
         },
         set: function (fn) {
-          this.ws && (this.ws.onclose = fn)
+          ;(this.ws && (this.ws.onclose = fn)) || (this.$options.onclose = fn)
         }
       },
       onerror: {
@@ -269,93 +324,13 @@ export class WebSocketClient {
           return this.ws?.onerror
         },
         set: function (fn) {
-          this.ws && (this.ws.onerror = fn)
+          ;(this.ws && (this.ws.onerror = fn)) || (this.$options.onerror = fn)
         }
       }
     })
   }
-
-  on (event, func) {
-    if (!this._events) this._events = Object.create(null)
-    if (Array.isArray(event)) {
-      for (let i = 0, l = event.length; i < l; i++) {
-        this.on(event[i], func)
-      }
-    } else {
-      ;(this._events[event] || (this._events[event] = [])).push(func)
-    }
-    return this
-  }
-
-  once (event, func) {
-    const $this = this
-
-    function once () {
-      $this.off(event, once)
-      func.apply($this, arguments)
-    }
-
-    once.func = func
-    this.on(event, once)
-    return this
-  }
-
-  off (event, func) {
-    // all
-    if (!arguments.length) {
-      this._events = Object.create(null)
-      return this
-    }
-    // array of events
-    if (Array.isArray(event)) {
-      for (let i = 0, l = event.length; i < l; i++) {
-        this.off(event[i], func)
-      }
-      return this
-    }
-    // specific event
-    const cbs = this._events[event]
-    if (!cbs) {
-      return this
-    }
-    if (!func) {
-      this._events[event] = null
-      return this
-    }
-    // specific handler
-    let cb
-    let i = cbs.length
-    while (i--) {
-      cb = cbs[i]
-      if (cb === func || cb.func === func) {
-        cbs.splice(i, 1)
-        break
-      }
-    }
-    return this
-  }
-
-  trigger (event, ...args) {
-    let cbs = this._events[event]
-    if (cbs) {
-      cbs = [...cbs]
-      let res
-      for (let i = 0, l = cbs.length; i < l; i++) {
-        try {
-          res = cbs[i].apply(this, args)
-          if (res && isPromise(res) && !res._handled) {
-            res.catch(e => console.error(e))
-            res._handled = true
-          }
-        } catch (e) {
-          console.error(e)
-        }
-      }
-    }
-    return this
-  }
 }
 
 export { Heartbeat }
-export { EventHub } from './util'
+export { EventHub } from './utils'
 export default WebSocketClient

@@ -10,17 +10,20 @@ const _toString = Object.prototype.toString
  * Strict object type check. Only returns true
  * for plain JavaScript objects.
  */
-export function isPlainObject (obj) {
+export function isPlainObject(obj: any) {
   return _toString.call(obj) === '[object Object]'
 }
 
-export function isPromise (p) {
+export function isPromise(p: any) {
   return (
-    p !== undefined && p !== null && typeof p.then === 'function' && typeof p.catch === 'function'
+    p !== undefined &&
+    p !== null &&
+    typeof p.then === 'function' &&
+    typeof p.catch === 'function'
   )
 }
 
-export function isArrayBufferView (obj) {
+export function isArrayBufferView(obj: any) {
   return (
     obj instanceof Int8Array ||
     obj instanceof Uint8Array ||
