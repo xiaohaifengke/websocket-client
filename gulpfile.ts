@@ -2,21 +2,53 @@ import ts from 'gulp-typescript'
 import path from 'path'
 import { src, dest, series, parallel } from 'gulp'
 import { run, withTaskName } from './build/utils'
-import { distPath, projectRoot } from './build/utils/paths'
+import {
+  distPath,
+  pkgDistPath,
+  projectRoot,
+  srcPath
+} from './build/utils/paths'
 import rename from 'gulp-rename'
+import { rollup, OutputOptions, ModuleFormat } from 'rollup'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
+import typescript from 'rollup-plugin-typescript2'
 
-const buildConfig = {
-  esm: {
-    module: 'ESNext',
-    output: 'es'
-  },
-  cjs: {
-    module: 'CommonJS',
-    output: 'lib'
+const buildPackages = async () => {
+  const plugins = [nodeResolve(), commonjs(), typescript()]
+  const inputOptions = {
+    input: path.resolve(srcPath, 'index.ts'),
+    plugins
   }
+  const outputOptions: OutputOptions[] = [
+    {
+      format: 'umd',
+      file: path.resolve(pkgDistPath, 'index.js'),
+      name: 'WebsocketClient',
+      exports: 'named'
+    },
+    {
+      format: 'esm',
+      file: path.resolve(pkgDistPath, 'index.esm.js')
+    }
+  ]
+  // create a bundle
+  const bundle = await rollup(inputOptions)
+
+  return Promise.all(outputOptions.map((option) => bundle.write(option)))
 }
 
-const buildPackages = () => {
+const buildModule = () => {
+  const buildConfig = {
+    esm: {
+      module: 'ESNext',
+      output: 'es'
+    },
+    cjs: {
+      module: 'CommonJS',
+      output: 'lib'
+    }
+  }
   const tsConfig = path.resolve(projectRoot, 'tsconfig.json')
   return Object.values(buildConfig).map((config) => {
     const outputName = config.output
@@ -43,7 +75,8 @@ const copyWebsocketClientFiles = async () => {
 export default series(
   withTaskName('clean', () => run('rm -rf dist')),
   parallel(
-    ...buildPackages(),
+    withTaskName('build:umd&esm', buildPackages),
+    ...buildModule(),
     withTaskName(`copy-files`, copyWebsocketClientFiles)
   )
 )
