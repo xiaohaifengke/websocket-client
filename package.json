@@ -1,6 +1,6 @@
 {
   "name": "websocket-client",
-  "version": "0.5.6",
+  "version": "1.0.0-alpha.0",
   "description": "A lightweight js lib for WebSocket.",
   "scripts": {
     "cz": "git-cz",
