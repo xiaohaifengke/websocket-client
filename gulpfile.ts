@@ -9,33 +9,41 @@ import {
   srcPath
 } from './build/utils/paths'
 import rename from 'gulp-rename'
-import { rollup, OutputOptions, ModuleFormat } from 'rollup'
+import { rollup, OutputOptions } from 'rollup'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import typescript from 'rollup-plugin-typescript2'
 
-const buildPackages = async () => {
+const buildPackages = () => {
   const plugins = [nodeResolve(), commonjs(), typescript()]
-  const inputOptions = {
-    input: path.resolve(srcPath, 'index.ts'),
-    plugins
-  }
+
   const outputOptions: OutputOptions[] = [
     {
       format: 'umd',
       file: path.resolve(pkgDistPath, 'index.js'),
       name: 'WebsocketClient',
-      exports: 'named'
+      exports: 'default'
     },
     {
       format: 'esm',
       file: path.resolve(pkgDistPath, 'index.esm.js')
     }
   ]
-  // create a bundle
-  const bundle = await rollup(inputOptions)
 
-  return Promise.all(outputOptions.map((option) => bundle.write(option)))
+  return Promise.all(
+    outputOptions.map(async (option) => {
+      const inputOptions = {
+        input: path.resolve(
+          srcPath,
+          option.format === 'esm' ? 'index.ts' : 'websocket-client.ts'
+        ),
+        plugins
+      }
+      // create a bundle
+      const bundle = await rollup(inputOptions)
+      bundle.write(option)
+    })
+  )
 }
 
 const buildModule = () => {

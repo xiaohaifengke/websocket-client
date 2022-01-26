@@ -1,9 +1,11 @@
 {
-  "name": "websocket-client",
+  "name": "websocket-c",
   "version": "0.5.6",
   "description": "A lightweight js lib for WebSocket.",
   "main": "lib/index.js",
   "module": "es/index.js",
+  "unpkg": "dist/index.js",
+  "jsdelivr": "dist/index.js",
   "author": "Jhail <Jhail@foxmail.com>",
   "homepage": "https://github.com/xiaohaifengke/websocket-client#readme",
   "keywords": [
